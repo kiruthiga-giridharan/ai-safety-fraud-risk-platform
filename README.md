@@ -69,6 +69,46 @@ PaySim is a **synthetic** dataset of mobile-money transactions. It was generated
 - 320 of 743 steps contain only fraudulent transactions.
 - `isFlaggedFraud` flags only 16 transactions and does not match the ">200,000 transfer" rule described on the dataset page.
 
+---
+
+## Data Pipeline
+
+```
+data/raw/PS_...log.csv
+   │  src/data_loader.py       explicit dtypes, snake_case column names
+   │  src/data_validation.py   schema, nulls, duplicates, impossible values, balance checks (report only)
+   ▼
+   src/preprocessing.py        adds transaction_id; excludes 16 zero-amount rows (audited)
+   ▼
+data/processed/transactions_clean.parquet   6,362,604 rows
+data/processed/excluded_rows.csv            16 rows + reason
+   │  src/database.py          explicit schema with CHECK constraints + indexes
+   ▼
+data/processed/paysim.db  (SQLite)  ◄── sql/*.sql named queries
+```
+
+Cleaning is deliberately minimal. PaySim's unusual balance behaviour is a property of the simulator, so it is kept and documented rather than "fixed".
+
+---
+
+## SQL Analysis
+
+15 named queries in [`sql/fraud_analysis.sql`](sql/fraud_analysis.sql) (descriptive) and [`sql/investigation_queries.sql`](sql/investigation_queries.sql) (rules, accounts, patterns). Each is annotated with the business question it answers, and all of them are run in [`notebooks/01b_fraud_sql_analysis.ipynb`](notebooks/01b_fraud_sql_analysis.ipynb).
+
+Key results on the cleaned data:
+
+| Finding | Result |
+|---|---|
+| Existing rule flag (`is_flagged_fraud`) | 16 of 8,197 frauds caught: precision 100%, **recall 0.20%** |
+| One-line rule "transaction moves the entire origin balance" | **100% precision, 97.82% recall**, a simulator artefact (see Limitations) |
+| Origin balance consistency | Fraud is the *consistent* ledger behaviour: 3.02% fraud rate when old − amount = new, vs 0.0012% when the balance is floored at 0 |
+| Fraud by amount | 8.95% fraud rate at exactly 10M; 0% above 10M (fraud is capped) |
+| Fraud over time | Steady 216–319 frauds/day; legitimate volume collapses from day 18 onwards; day 31 is 100% fraud |
+| TRANSFER → CASH_OUT chains | 99.5% of fraud transfers have a matching cash-out, but linked only by timing and row order, never by account |
+| Mule / repeat-victim accounts | No account received more than 2 frauds; no origin account was defrauded twice |
+
+---
+
 ### LLM safety
 
 To be selected in the safety phase. The source and its limitations will be documented here.
@@ -80,7 +120,7 @@ To be selected in the safety phase. The source and its limitations will be docum
 | Phase | Scope | Status |
 |------:|-------|--------|
 | 1 | Project setup, data loading, data-quality checks, initial EDA notebook | Done |
-| 2 | Data cleaning, SQLite load, SQL investigation queries, full EDA findings | Planned |
+| 2 | Data cleaning, SQLite load, SQL investigation queries, full EDA findings | Done |
 | 3 | Feature engineering and leakage review | Planned |
 | 4 | Logistic Regression baseline, Random Forest, XGBoost | Planned |
 | 5 | Evaluation, threshold analysis, risk-level boundaries | Planned |
@@ -99,9 +139,17 @@ ai-safety-fraud-risk-platform/
 ├── data/
 │   ├── raw/             # original datasets (manually downloaded, git-ignored)
 │   └── processed/       # cleaned / feature data (git-ignored)
-├── notebooks/           # numbered analysis notebooks
-├── sql/                 # SQL investigation queries
-├── src/                 # reusable pipeline code
+├── notebooks/
+│   ├── 01_fraud_eda.ipynb              # data quality + exploratory analysis
+│   └── 01b_fraud_sql_analysis.ipynb    # all SQL queries, with findings
+├── sql/
+│   ├── fraud_analysis.sql              # descriptive queries
+│   └── investigation_queries.sql       # rules, suspicious accounts, patterns
+├── src/
+│   ├── data_loader.py                  # raw CSV loading
+│   ├── data_validation.py              # reusable data-quality checks
+│   ├── preprocessing.py                # cleaning + transaction IDs
+│   └── database.py                     # SQLite load + named-query runner
 ├── models/              # trained artefacts (git-ignored)
 ├── api/                 # FastAPI service
 ├── dashboard/           # Streamlit app
@@ -126,10 +174,13 @@ pip install -r requirements.txt
 
 ```bash
 # 1. Place the PaySim CSV in data/raw/
-# 2. Run the tests
+# 2. Build the cleaned dataset and the SQLite database (~30 s)
+python -m src.preprocessing
+python -m src.database
+# 3. Run the tests
 pytest
-# 3. Open the EDA notebook
-jupyter notebook notebooks/01_fraud_eda.ipynb
+# 4. Open the notebooks
+jupyter notebook notebooks/
 ```
 
 If the CSV lives somewhere else, point to it with an environment variable:
@@ -143,5 +194,7 @@ export PAYSIM_PATH=/path/to/PS_20174392719_1491204439457_log.csv
 ## Limitations
 
 - PaySim is synthetic. Patterns found in it may not carry over to real banking data, so findings should be read as a demonstration of method rather than real-world fraud intelligence.
+- **Simulator artefacts make fraud unrealistically easy to detect.** A single rule ("moves the entire origin balance") achieves 100% precision and 97.82% recall. Fraud amounts are capped at 10M, and legitimate traffic disappears in parts of the timeline. Models will be benchmarked against this rule, and evaluated with and without balance features, so that strong metrics are not mistaken for real-world performance.
+- Destination balances are not running balances, and merchant balances are not recorded.
 
 *Sections on EDA findings, SQL analysis, feature engineering, model evaluation, explainability, API and dashboard will be added as each phase is completed.*
