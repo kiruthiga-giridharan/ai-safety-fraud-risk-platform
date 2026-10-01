@@ -1,0 +1,41 @@
+# --- Secrets & configuration ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# --- Data (datasets are downloaded manually; never committed) ---
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Trained model artefacts (reproducible from code) ---
+models/*
+!models/.gitkeep
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Notebooks ---
+.ipynb_checkpoints/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
