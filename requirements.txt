@@ -7,17 +7,21 @@ pyarrow>=14.0            # fast Parquet I/O for processed data
 matplotlib>=3.7
 plotly>=5.18
 
-# Machine learning & explainability (used from Phase 3 onwards)
+# Machine learning & explainability
+# macOS: XGBoost needs OpenMP -> `brew install libomp`
 scikit-learn>=1.3,<1.7
 xgboost>=2.0
 shap>=0.44
 joblib>=1.3
 
-# API & dashboard (used in later phases)
+# API & dashboard
 fastapi>=0.110
 uvicorn[standard]>=0.27
 pydantic>=2.5
 streamlit>=1.32
+
+# Investigation assistant (Claude API; 0.x line supports Python 3.9)
+anthropic>=0.100,<1
 
 # Configuration
 python-dotenv>=1.0
