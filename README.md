@@ -109,6 +109,36 @@ Key results on the cleaned data:
 
 ---
 
+## Feature Engineering
+
+Framing: **post-transaction monitoring**. Transactions are scored after processing, so post-transaction balances are valid inputs. Details are in [`notebooks/02_fraud_feature_engineering.ipynb`](notebooks/02_fraud_feature_engineering.ipynb), and all logic is in [`src/feature_engineering.py`](src/feature_engineering.py), shared with the API.
+
+- **Scope:** TRANSFER and CASH_OUT only. That is 2,770,393 transactions and all 8,197 frauds (0.296%); the other types contain no fraud.
+- **13 features,** each computed from the transaction's own fields:
+  - log amount and transaction type;
+  - origin and destination balances (log-scaled);
+  - ledger-error terms;
+  - drain ratio;
+  - zero-balance and overspend flags.
+- **Two feature sets:**
+  - `full` (13 features);
+  - `no_origin_balance` (6 features), which removes the origin-balance artefact to show what models learn beyond "the account was emptied".
+- **Excluded for leakage/artefacts:**
+  - `step` (time);
+  - account IDs;
+  - `is_flagged_fraud`;
+  - `transaction_id` (encodes file order);
+  - TRANSFER→CASH_OUT chain features (they use a future row);
+  - whole-dataset account counts.
+- **Split:** 70/15/15 train/validation/test, stratified and random, with a fixed seed. Thresholds are chosen on validation; test is used once.
+
+| Single-feature separation (train split) | Best feature | Value |
+|---|---|---|
+| `full` set | `orig_fully_drained` | 0.990 |
+| `no_origin_balance` set | `log_old_balance_dest` | 0.786 |
+
+---
+
 ### LLM safety
 
 To be selected in the safety phase. The source and its limitations will be documented here.
@@ -121,7 +151,7 @@ To be selected in the safety phase. The source and its limitations will be docum
 |------:|-------|--------|
 | 1 | Project setup, data loading, data-quality checks, initial EDA notebook | Done |
 | 2 | Data cleaning, SQLite load, SQL investigation queries, full EDA findings | Done |
-| 3 | Feature engineering and leakage review | Planned |
+| 3 | Feature engineering and leakage review | Done |
 | 4 | Logistic Regression baseline, Random Forest, XGBoost | Planned |
 | 5 | Evaluation, threshold analysis, risk-level boundaries | Planned |
 | 6 | SHAP global and local explanations | Planned |
@@ -141,7 +171,8 @@ ai-safety-fraud-risk-platform/
 │   └── processed/       # cleaned / feature data (git-ignored)
 ├── notebooks/
 │   ├── 01_fraud_eda.ipynb              # data quality + exploratory analysis
-│   └── 01b_fraud_sql_analysis.ipynb    # all SQL queries, with findings
+│   ├── 01b_fraud_sql_analysis.ipynb    # all SQL queries, with findings
+│   └── 02_fraud_feature_engineering.ipynb  # features, leakage review, splits
 ├── sql/
 │   ├── fraud_analysis.sql              # descriptive queries
 │   └── investigation_queries.sql       # rules, suspicious accounts, patterns
@@ -149,7 +180,8 @@ ai-safety-fraud-risk-platform/
 │   ├── data_loader.py                  # raw CSV loading
 │   ├── data_validation.py              # reusable data-quality checks
 │   ├── preprocessing.py                # cleaning + transaction IDs
-│   └── database.py                     # SQLite load + named-query runner
+│   ├── database.py                     # SQLite load + named-query runner
+│   └── feature_engineering.py          # features, feature sets, train/val/test split
 ├── models/              # trained artefacts (git-ignored)
 ├── api/                 # FastAPI service
 ├── dashboard/           # Streamlit app
@@ -177,6 +209,7 @@ pip install -r requirements.txt
 # 2. Build the cleaned dataset and the SQLite database (~30 s)
 python -m src.preprocessing
 python -m src.database
+python -m src.feature_engineering   # train / validation / test splits
 # 3. Run the tests
 pytest
 # 4. Open the notebooks
