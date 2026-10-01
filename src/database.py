@@ -30,7 +30,7 @@ from src.data_loader import PROCESSED_DATA_DIR, PROJECT_ROOT
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path(os.getenv("FRAUD_DB_PATH", PROCESSED_DATA_DIR / "paysim.db"))
+DB_PATH = Path(os.getenv("FRAUD_DB_PATH") or PROCESSED_DATA_DIR / "paysim.db")
 SQL_DIR = PROJECT_ROOT / "sql"
 TABLE_NAME = "transactions"
 

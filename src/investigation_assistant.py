@@ -28,8 +28,8 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-MODEL = os.getenv("INVESTIGATION_MODEL", "claude-opus-5-5")
-LLM_ENABLED = os.getenv("INVESTIGATION_LLM", "on").lower() != "off"
+MODEL = os.getenv("INVESTIGATION_MODEL") or "claude-opus-5-5"
+LLM_ENABLED = (os.getenv("INVESTIGATION_LLM") or "on").lower() != "off"
 
 SYSTEM_PROMPT = """You are a fraud-investigation assistant writing for a bank analyst.
 

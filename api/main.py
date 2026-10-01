@@ -16,6 +16,9 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Query, Request
+from dotenv import load_dotenv
+
+load_dotenv()  # optional .env (see .env.example); must run before src modules read env vars
 
 from api.schemas import (
     FraudPrediction,
@@ -30,12 +33,12 @@ from src import fraud_model as fm
 from src import investigation_assistant as assistant
 from src import safety_model as sm
 
-logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"),
+logging.basicConfig(level=os.getenv("LOG_LEVEL") or "INFO",
                     format="%(asctime)s %(levelname)s %(name)s | %(message)s")
 logger = logging.getLogger("risk_api")
 
-FRAUD_MODEL_PATH = Path(os.getenv("FRAUD_MODEL_PATH", fm.BUNDLE_PATH))
-SAFETY_MODEL_PATH = Path(os.getenv("SAFETY_MODEL_PATH", sm.SAFETY_BUNDLE_PATH))
+FRAUD_MODEL_PATH = Path(os.getenv("FRAUD_MODEL_PATH") or fm.BUNDLE_PATH)
+SAFETY_MODEL_PATH = Path(os.getenv("SAFETY_MODEL_PATH") or sm.SAFETY_BUNDLE_PATH)
 
 
 def _try_load(loader, path: Path, name: str) -> Optional[dict]:
