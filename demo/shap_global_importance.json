@@ -1,0 +1,67 @@
+[
+ {
+  "feature":"orig_fully_drained",
+  "mean_abs_shap":5.9067215919,
+  "label":"Sender account fully drained"
+ },
+ {
+  "feature":"log_old_balance_dest",
+  "mean_abs_shap":3.9891753197,
+  "label":"Recipient balance before"
+ },
+ {
+  "feature":"log_new_balance_dest",
+  "mean_abs_shap":3.2450475693,
+  "label":"Recipient balance after"
+ },
+ {
+  "feature":"orig_balance_error",
+  "mean_abs_shap":3.2403371334,
+  "label":"Sender balance inconsistency"
+ },
+ {
+  "feature":"log_amount_to_orig_balance",
+  "mean_abs_shap":3.016058445,
+  "label":"Amount relative to sender balance"
+ },
+ {
+  "feature":"log_amount",
+  "mean_abs_shap":2.7314381599,
+  "label":"Transaction amount"
+ },
+ {
+  "feature":"dest_balance_error",
+  "mean_abs_shap":1.6134092808,
+  "label":"Recipient balance inconsistency"
+ },
+ {
+  "feature":"is_transfer",
+  "mean_abs_shap":0.5197973847,
+  "label":"Transaction type"
+ },
+ {
+  "feature":"orig_zero_before",
+  "mean_abs_shap":0.3212824762,
+  "label":"Sender started with zero balance"
+ },
+ {
+  "feature":"log_old_balance_orig",
+  "mean_abs_shap":0.2989721596,
+  "label":"Sender balance before"
+ },
+ {
+  "feature":"amount_exceeds_orig_balance",
+  "mean_abs_shap":0.1798918545,
+  "label":"Amount exceeds sender balance"
+ },
+ {
+  "feature":"log_new_balance_orig",
+  "mean_abs_shap":0.1576779187,
+  "label":"Sender balance after"
+ },
+ {
+  "feature":"dest_zero_before_and_after",
+  "mean_abs_shap":0.042598024,
+  "label":"Recipient balance stayed at zero"
+ }
+]

@@ -12,6 +12,7 @@ artefacts; nothing is hard-coded.
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -50,57 +51,96 @@ PAGES = ["Executive Overview", "Fraud Analytics", "Transaction Investigation",
 
 # ---------------------------------------------------------------------------
 # Cached data access
+#
+# FULL mode reads the SQLite database and models built by the pipeline.
+# DEMO mode (hosted app) reads the small committed demo/ folder produced by
+# `python -m src.demo_artifacts`: same models, precomputed results.
 # ---------------------------------------------------------------------------
+
+DEMO_DIR = PROJECT_ROOT / "demo"
+FULL_ARTEFACTS = (db.DB_PATH, fm.BUNDLE_PATH, fm.COMPARISON_PATH, sm.SAFETY_BUNDLE_PATH,
+                  *fm.SPLIT_PATHS.values())
+DEMO_MODE = (os.getenv("DASHBOARD_MODE") == "demo"
+             or (not all(Path(p).is_file() for p in FULL_ARTEFACTS) and DEMO_DIR.is_dir()))
+
 
 @st.cache_resource
 def fraud_bundle() -> dict:
-    return fm.load_bundle()
+    return fm.load_bundle(DEMO_DIR / fm.BUNDLE_PATH.name if DEMO_MODE else fm.BUNDLE_PATH)
 
 
 @st.cache_resource
 def safety_bundle() -> dict:
-    return sm.load_safety_bundle()
+    return sm.load_safety_bundle(DEMO_DIR / sm.SAFETY_BUNDLE_PATH.name if DEMO_MODE else sm.SAFETY_BUNDLE_PATH)
 
 
 @st.cache_data
-def sql(name: str, **params) -> pd.DataFrame:
+def sql(name: str) -> pd.DataFrame:
+    if DEMO_MODE:
+        return pd.read_json(DEMO_DIR / "sql" / f"{name}.json", orient="records")
     conn = db.get_connection()
     try:
-        return db.run_query(conn, db.load_named_queries()[name], params or None)
+        return db.run_query(conn, db.load_named_queries()[name])
     finally:
         conn.close()
+
+
+@st.cache_data
+def demo_transactions() -> pd.DataFrame:
+    return pd.read_parquet(DEMO_DIR / "transactions_sample.parquet")
 
 
 @st.cache_data
 def transaction_by_id(transaction_id: int) -> dict | None:
-    conn = db.get_connection()
-    try:
-        df = db.run_query(conn, "SELECT * FROM transactions WHERE transaction_id = :id", {"id": transaction_id})
-    finally:
-        conn.close()
+    if DEMO_MODE:
+        df = demo_transactions()
+        df = df[df["transaction_id"] == transaction_id]
+    else:
+        conn = db.get_connection()
+        try:
+            df = db.run_query(conn, "SELECT * FROM transactions WHERE transaction_id = :id", {"id": transaction_id})
+        finally:
+            conn.close()
     return None if df.empty else df.iloc[0].to_dict()
 
 
 @st.cache_data
 def model_comparison() -> pd.DataFrame:
-    return pd.read_json(fm.COMPARISON_PATH)
+    return pd.read_json(DEMO_DIR / fm.COMPARISON_PATH.name if DEMO_MODE else fm.COMPARISON_PATH)
 
 
 @st.cache_data
 def safety_metrics() -> dict:
-    return json.loads(sm.SAFETY_METRICS_PATH.read_text())
+    return json.loads((DEMO_DIR / sm.SAFETY_METRICS_PATH.name if DEMO_MODE else sm.SAFETY_METRICS_PATH).read_text())
 
 
-@st.cache_data
-def split_scores(split: str) -> tuple[np.ndarray, np.ndarray]:
-    """Deployed-model scores and labels for a saved split."""
+def _split_scores(split: str) -> tuple[np.ndarray, np.ndarray]:
+    """Deployed-model scores and labels for a saved split (full mode only)."""
     bundle = fraud_bundle()
     frame = fm.load_split_frame(split)
     return bundle["model"].predict_proba(frame[bundle["features"]])[:, 1], frame["is_fraud"].to_numpy()
 
 
 @st.cache_data
+def risk_levels_test() -> pd.DataFrame:
+    if DEMO_MODE:
+        return pd.read_json(DEMO_DIR / "risk_levels_test.json", orient="records")
+    scores, y = _split_scores("test")
+    return ev.risk_level_table(y, scores, fraud_bundle()["risk_boundaries"]).reset_index()
+
+
+@st.cache_data
+def thresholds_validation() -> pd.DataFrame:
+    if DEMO_MODE:
+        return pd.read_json(DEMO_DIR / "thresholds_validation.json", orient="records")
+    scores, y = _split_scores("validation")
+    return ev.threshold_table(y, scores)
+
+
+@st.cache_data
 def shap_global_importance() -> pd.DataFrame:
+    if DEMO_MODE:
+        return pd.read_json(DEMO_DIR / "shap_global_importance.json", orient="records")
     validation = fm.load_split_frame("validation")
     sample = pd.concat([validation[validation["is_fraud"] == 1],
                         validation[validation["is_fraud"] == 0].sample(20_000, random_state=42)])
@@ -108,7 +148,9 @@ def shap_global_importance() -> pd.DataFrame:
 
 
 def artefacts_ready() -> bool:
-    missing = [p for p in (db.DB_PATH, fm.BUNDLE_PATH, fm.COMPARISON_PATH, sm.SAFETY_BUNDLE_PATH) if not Path(p).is_file()]
+    if DEMO_MODE:
+        return True
+    missing = [p for p in FULL_ARTEFACTS if not Path(p).is_file()]
     if missing:
         st.error("Pipeline artefacts are missing: " + ", ".join(str(Path(p).name) for p in missing))
         st.code("python -m src.preprocessing\npython -m src.database\npython -m src.feature_engineering\n"
@@ -172,8 +214,7 @@ def page_overview() -> None:
         by_type = sql("fraud_rate_by_type")
         st.plotly_chart(hbar(by_type, "fraud_rate_pct", "type", "Fraud rate by transaction type (%)", ORANGE, "{:.3f}%"))
     with right:
-        scores, y = split_scores("test")
-        levels = ev.risk_level_table(y, scores, bundle["risk_boundaries"]).reset_index()
+        levels = risk_levels_test()
         fig = go.Figure(go.Bar(x=levels["risk_level"], y=levels["transactions"],
                                marker_color=[RISK_STYLE[l][0] for l in levels["risk_level"]],
                                text=[f"{n:,} tx<br>{f:,} fraud" for n, f in zip(levels["transactions"], levels["fraud"])],
@@ -253,7 +294,11 @@ def page_investigation() -> None:
             return
         row = transaction_by_id(numeric_id)
         if row is None:
-            st.warning(f"{raw_id} not found in the cleaned dataset.")
+            where = "the demo's 1,004-transaction sample" if DEMO_MODE else "the cleaned dataset"
+            st.warning(f"{raw_id} not found in {where}.")
+            if DEMO_MODE:
+                ids = ", ".join(format_transaction_id(i) for i in demo_transactions()["transaction_id"].head(5))
+                st.caption(f"Try one of: {ids} … or use *Enter details manually*.")
             return
         tx = {k: row[k] for k in ("type", "amount", "old_balance_orig", "new_balance_orig", "old_balance_dest", "new_balance_dest")}
         actual, tx_id = int(row["is_fraud"]), format_transaction_id(numeric_id)
@@ -345,8 +390,7 @@ def page_model_performance() -> None:
              f"**HIGH ≥ {b['high']:.4f}** (alert precision ≥ 99%).")
 
     question("How do precision and recall change with the threshold?")
-    scores, y = split_scores("validation")
-    st.dataframe(ev.threshold_table(y, scores).round(4), hide_index=True)
+    st.dataframe(thresholds_validation().round(4), hide_index=True)
     st.caption("Scores are almost all near 0 or 1, so thresholds 0.3–0.7 give identical results for this model.")
 
     c3, c4 = st.columns(2)
@@ -436,6 +480,9 @@ def main() -> None:
                             index=slugs.index(requested) if requested in slugs else 0)
     st.sidebar.caption("Fraud model and LLM safety classifier trained on public data. Built with Python, SQL, "
                        "scikit-learn, XGBoost, SHAP, FastAPI and Streamlit.")
+    if DEMO_MODE:
+        st.sidebar.info("**Hosted demo.** Results are precomputed from the full 6.3M-row pipeline; "
+                        "transaction lookup covers a 1,004-transaction sample. Models run live.")
     if not artefacts_ready():
         return
     {

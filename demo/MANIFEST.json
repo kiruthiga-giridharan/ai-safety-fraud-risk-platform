@@ -1,0 +1,15 @@
+{
+  "sql_queries": [
+    "dataset_overview",
+    "fraud_rate_by_type",
+    "fraud_rate_by_amount_band",
+    "fraud_by_day",
+    "full_balance_drain_rule",
+    "existing_rule_performance",
+    "suspicious_destination_accounts"
+  ],
+  "sample_transactions": 1004,
+  "sample_fraud": 303,
+  "fraud_model": "fraud-xgboost-full-20261001",
+  "safety_model": "safety-tfidf_word_char_logreg-20261001"
+}

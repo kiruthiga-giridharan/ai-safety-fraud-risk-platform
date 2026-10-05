@@ -1,0 +1,10 @@
+[
+ {
+  "transactions":6362604,
+  "fraud_transactions":8197,
+  "fraud_rate_pct":0.1288,
+  "total_amount":1144392944759.7700195312,
+  "fraud_amount":12056415427.8400001526,
+  "fraud_amount_pct":1.0535
+ }
+]

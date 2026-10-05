@@ -1,0 +1,16 @@
+[
+ {
+  "pattern":"moves entire balance",
+  "transactions":8018,
+  "fraud":8018,
+  "fraud_rate_pct":100.0,
+  "share_of_fraud_pct":97.82
+ },
+ {
+  "pattern":"other",
+  "transactions":2762375,
+  "fraud":179,
+  "fraud_rate_pct":0.0065,
+  "share_of_fraud_pct":2.18
+ }
+]

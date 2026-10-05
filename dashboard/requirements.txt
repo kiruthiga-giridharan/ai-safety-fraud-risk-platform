@@ -1,0 +1,16 @@
+# Dependencies for the hosted dashboard (Streamlit Community Cloud).
+# Streamlit Cloud uses this file instead of the root requirements.txt because it
+# sits next to the entrypoint. Versions are pinned to those that trained the
+# committed models in demo/: pickled scikit-learn/XGBoost models must be loaded
+# with the same library versions.
+streamlit==1.50.0
+pandas==2.3.3
+numpy==2.0.2
+scikit-learn==1.6.1
+xgboost-cpu==2.1.4          # same library as xgboost, without the ~200 MB GPU (NCCL) dependency
+shap==0.49.1
+plotly==7.1.0
+pyarrow>=14.0
+joblib==1.5.3
+anthropic>=0.100,<1
+python-dotenv>=1.0

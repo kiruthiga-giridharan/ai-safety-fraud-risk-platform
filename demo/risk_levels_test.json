@@ -1,0 +1,23 @@
+[
+ {
+  "risk_level":"LOW",
+  "transactions":414209,
+  "fraud":2,
+  "fraud_rate_pct":0.0,
+  "share_of_all_fraud_pct":0.16
+ },
+ {
+  "risk_level":"MEDIUM",
+  "transactions":116,
+  "fraud":2,
+  "fraud_rate_pct":1.724,
+  "share_of_all_fraud_pct":0.16
+ },
+ {
+  "risk_level":"HIGH",
+  "transactions":1234,
+  "fraud":1226,
+  "fraud_rate_pct":99.352,
+  "share_of_all_fraud_pct":99.67
+ }
+]

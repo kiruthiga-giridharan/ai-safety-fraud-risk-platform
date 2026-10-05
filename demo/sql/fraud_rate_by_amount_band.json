@@ -1,0 +1,38 @@
+[
+ {
+  "amount_band":"1. under 10K",
+  "transactions":78825,
+  "fraud":262,
+  "fraud_rate_pct":0.3324
+ },
+ {
+  "amount_band":"2. 10K to 100K",
+  "transactions":757271,
+  "fraud":1429,
+  "fraud_rate_pct":0.1887
+ },
+ {
+  "amount_band":"3. 100K to 1M",
+  "transactions":1803790,
+  "fraud":3800,
+  "fraud_rate_pct":0.2107
+ },
+ {
+  "amount_band":"4. 1M to under 10M",
+  "transactions":124857,
+  "fraud":2419,
+  "fraud_rate_pct":1.9374
+ },
+ {
+  "amount_band":"5. exactly 10M",
+  "transactions":3207,
+  "fraud":287,
+  "fraud_rate_pct":8.9492
+ },
+ {
+  "amount_band":"6. over 10M",
+  "transactions":2443,
+  "fraud":0,
+  "fraud_rate_pct":0.0
+ }
+]
