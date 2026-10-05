@@ -259,6 +259,8 @@ curl -X POST localhost:8000/fraud/predict?explain=true -H 'content-type: applica
 
 `streamlit run dashboard/app.py`. Pages: **Executive Overview · Fraud Analytics · Transaction Investigation · Model Performance · LLM Safety · About**. Every figure is read from the SQLite queries and model artefacts. You can deep-link to a page with `?page=model-performance`.
 
+**Hosted demo mode.** The 1 GB database cannot be hosted for free, so the repo includes a 3 MB `demo/` folder built by `python -m src.demo_artifacts`: the deployed models plus precomputed results from the full pipeline. When the full data is absent (as on Streamlit Community Cloud) the dashboard switches to demo mode automatically. Every number is identical to the full run; models still score live, and transaction lookup covers a 1,004-transaction sample. Deployment uses the pinned `dashboard/requirements.txt` (same library versions that trained the models) and `packages.txt`.
+
 ## Investigation Assistant
 
 "Why was this transaction flagged?" The assistant receives **only** structured case facts: the score, the risk level, the transaction fields and the SHAP factors. Grounding is enforced, not merely requested:
@@ -297,6 +299,7 @@ python -m src.database             # → data/processed/paysim.db
 python -m src.feature_engineering  # → train / validation / test splits
 python -m src.fraud_model          # train 6 models, choose boundaries, test once → models/
 python -m src.safety_model         # → models/safety_model.joblib
+python -m src.demo_artifacts       # optional: refresh demo/ for the hosted dashboard
 
 # 3. Use it
 pytest                             # 72 tests
