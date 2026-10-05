@@ -13,8 +13,26 @@ Both systems sit behind one **FastAPI** service and one **Streamlit** dashboard.
 
 ---
 
+## Screenshots
+
+**Executive overview:** headline figures from the held-out test data, with the honest comparison against a one-line rule.
+![Executive overview](docs/images/overview.png)
+
+**Transaction investigation:** score, risk level and the SHAP factors behind one real transaction.
+![Transaction investigation](docs/images/investigation.png)
+
+| Model performance | LLM safety |
+|---|---|
+| ![Model performance](docs/images/model-performance.png) | ![LLM safety](docs/images/llm-safety.png) |
+
+| Fraud analytics |
+|---|
+| ![Fraud analytics](docs/images/fraud-analytics.png) |
+
+---
+
 ## Contents
-[Business Problem](#business-problem) · [Architecture](#architecture) · [Dataset](#dataset) · [Data Pipeline](#data-pipeline) · [SQL Analysis](#sql-analysis) · [EDA Findings](#eda-findings) · [Feature Engineering](#feature-engineering) · [Machine Learning](#machine-learning) · [Model Evaluation](#model-evaluation) · [Explainability](#explainability) · [LLM Safety](#llm-safety) · [API](#api) · [Dashboard](#dashboard) · [Investigation Assistant](#investigation-assistant) · [Installation](#installation) · [How to Run](#how-to-run) · [Repository Structure](#repository-structure) · [Key Findings](#key-findings) · [Limitations](#limitations) · [Future Improvements](#future-improvements) · [Design Decisions](#design-decisions-interview-notes)
+[Screenshots](#screenshots) · [Business Problem](#business-problem) · [Architecture](#architecture) · [Dataset](#dataset) · [Data Pipeline](#data-pipeline) · [SQL Analysis](#sql-analysis) · [EDA Findings](#eda-findings) · [Feature Engineering](#feature-engineering) · [Machine Learning](#machine-learning) · [Model Evaluation](#model-evaluation) · [Explainability](#explainability) · [LLM Safety](#llm-safety) · [API](#api) · [Dashboard](#dashboard) · [Investigation Assistant](#investigation-assistant) · [Installation](#installation) · [How to Run](#how-to-run) · [Repository Structure](#repository-structure) · [Key Findings](#key-findings) · [Limitations](#limitations) · [Future Improvements](#future-improvements) · [Design Decisions](#design-decisions-interview-notes)
 
 ---
 
